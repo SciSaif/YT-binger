@@ -31,6 +31,15 @@ export interface VideoCache {
 export interface AppState {
   progress: Record<string, ChannelProgress>;
   videoCache: Record<string, VideoCache>;
+  visitedChannels: VisitedChannel[];
+}
+
+export interface VisitedChannel {
+  channelId: string;
+  channelTitle: string;
+  uploadsPlaylistId: string;
+  lastVisitedAt: number;
+  sourceUrl?: string;
 }
 
 export type ParsedChannelInput =

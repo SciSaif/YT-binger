@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useSyncExternalStore } from "react";
-import type { AppState, SortOrder, VideoCache } from "@/types";
+import type { AppState, ChannelInfo, SortOrder, VideoCache, VisitedChannel } from "@/types";
 
 const STORAGE_KEY = "yt-binger";
 export const VIDEO_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -9,6 +9,7 @@ export const VIDEO_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_STATE: AppState = {
   progress: {},
   videoCache: {},
+  visitedChannels: [],
 };
 
 let clientState: AppState | null = null;
@@ -38,6 +39,7 @@ function readStateFromStorage(): AppState {
     return {
       progress: parsed.progress ?? {},
       videoCache: parsed.videoCache ?? {},
+      visitedChannels: parsed.visitedChannels ?? [],
     };
   } catch {
     return DEFAULT_STATE;
@@ -240,6 +242,29 @@ export function useAppState() {
     [persist],
   );
 
+  const recordVisit = useCallback(
+    (channel: ChannelInfo, sourceUrl?: string) => {
+      persist((prev) => {
+        const entry: VisitedChannel = {
+          channelId: channel.channelId,
+          channelTitle: channel.title,
+          uploadsPlaylistId: channel.uploadsPlaylistId,
+          lastVisitedAt: Date.now(),
+          sourceUrl,
+        };
+        const visitedChannels = [
+          entry,
+          ...(prev.visitedChannels ?? []).filter(
+            (visited) => visited.channelId !== channel.channelId,
+          ),
+        ];
+
+        return { ...prev, visitedChannels };
+      });
+    },
+    [persist],
+  );
+
   return {
     state,
     getProgress,
@@ -250,5 +275,6 @@ export function useAppState() {
     setSortOrder,
     getVideoCache,
     setVideoCache,
+    recordVisit,
   };
 }
