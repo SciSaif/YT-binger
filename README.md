@@ -2,7 +2,16 @@
 
 Binge-watch a YouTube channel from oldest to newest without missing a video. Track what you've watched, set your current position, and get a recommendation for what to watch next.
 
-All watch progress is stored in your browser's **localStorage** — nothing is saved on a server except API calls to fetch channel data.
+All watch progress and API key preferences are stored in your browser's **localStorage**.
+
+## API keys
+
+On first visit, you can:
+
+- Enter your own **YouTube Data API v3** key (stored in localStorage), or
+- Click **Continue with guest key** to use the server's `YOUTUBE_API_KEY` from `.env`
+
+Change this anytime via **Settings** (top-right link). If you provide your own key, it is sent to this app's API routes only — not stored on a server.
 
 ## Features
 

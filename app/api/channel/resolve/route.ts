@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { parseChannelUrl } from "@/lib/channel-url";
+import { resolveYouTubeApiKey } from "@/lib/youtube-server-key";
 import { resolveChannel } from "@/lib/youtube";
 
 export async function POST(request: Request) {
@@ -19,7 +20,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const channel = await resolveChannel(parsed);
+    const apiKey = resolveYouTubeApiKey(request);
+    const channel = await resolveChannel(parsed, apiKey);
     return NextResponse.json(channel);
   } catch (error) {
     const message =

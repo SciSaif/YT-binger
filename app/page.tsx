@@ -1,5 +1,5 @@
-import { BingeApp } from "@/components/BingeApp";
+import { AppShell } from "@/components/AppShell";
 
 export default function Home() {
-  return <BingeApp />;
+  return <AppShell />;
 }

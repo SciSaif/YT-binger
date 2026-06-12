@@ -1,7 +1,24 @@
 import { expect, test } from "@playwright/test";
 
+async function completeOnboarding(page: import("@playwright/test").Page) {
+  const backButton = page.getByRole("button", { name: "Back to channels" });
+  if (await backButton.isVisible().catch(() => false)) {
+    await backButton.click();
+  }
+
+  const guestButton = page.getByRole("button", { name: "Continue with guest key" });
+  if (await guestButton.isVisible().catch(() => false)) {
+    await guestButton.click();
+  }
+
+  await expect(page.getByPlaceholder(/Paste channel URL/i)).toBeVisible({
+    timeout: 15_000,
+  });
+}
+
 test("loads home page without getting stuck on hydration", async ({ page }) => {
   await page.goto("/");
+  await completeOnboarding(page);
 
   await expect(page.getByRole("heading", { name: "YT Binger" })).toBeVisible();
   await expect(page.getByPlaceholder(/Paste channel URL/i)).toBeVisible();
@@ -12,6 +29,7 @@ test("loads home page without getting stuck on hydration", async ({ page }) => {
 
 test("loads a channel and shows videos", async ({ page }) => {
   await page.goto("/");
+  await completeOnboarding(page);
 
   await page
     .getByPlaceholder(/Paste channel URL/i)
@@ -34,6 +52,7 @@ test("loads a channel and shows videos", async ({ page }) => {
 
 test("mark watched advances next recommendation", async ({ page }) => {
   await page.goto("/");
+  await completeOnboarding(page);
 
   await page
     .getByPlaceholder(/Paste channel URL/i)

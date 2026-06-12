@@ -32,20 +32,13 @@ interface VideoItem {
   contentDetails?: { duration?: string };
 }
 
-function getApiKey(): string {
-  const key = process.env.YOUTUBE_API_KEY;
-  if (!key) {
-    throw new Error("YOUTUBE_API_KEY is not configured");
-  }
-  return key;
-}
-
 async function youtubeFetch<T>(
+  apiKey: string,
   path: string,
   params: Record<string, string>,
 ): Promise<T> {
   const url = new URL(`${YOUTUBE_API_BASE}/${path}`);
-  url.searchParams.set("key", getApiKey());
+  url.searchParams.set("key", apiKey);
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, value);
   }
@@ -75,8 +68,11 @@ function channelFromItem(item: ChannelItem): ChannelInfo {
   };
 }
 
-async function fetchChannelById(channelId: string): Promise<ChannelInfo> {
-  const data = await youtubeFetch<YouTubeListResponse<ChannelItem>>("channels", {
+async function fetchChannelById(
+  apiKey: string,
+  channelId: string,
+): Promise<ChannelInfo> {
+  const data = await youtubeFetch<YouTubeListResponse<ChannelItem>>(apiKey, "channels", {
     part: "snippet,contentDetails",
     id: channelId,
   });
@@ -89,8 +85,11 @@ async function fetchChannelById(channelId: string): Promise<ChannelInfo> {
   return channelFromItem(item);
 }
 
-async function fetchChannelByHandle(handle: string): Promise<ChannelInfo> {
-  const data = await youtubeFetch<YouTubeListResponse<ChannelItem>>("channels", {
+async function fetchChannelByHandle(
+  apiKey: string,
+  handle: string,
+): Promise<ChannelInfo> {
+  const data = await youtubeFetch<YouTubeListResponse<ChannelItem>>(apiKey, "channels", {
     part: "snippet,contentDetails",
     forHandle: handle,
   });
@@ -103,8 +102,11 @@ async function fetchChannelByHandle(handle: string): Promise<ChannelInfo> {
   return channelFromItem(item);
 }
 
-async function fetchChannelByUsername(username: string): Promise<ChannelInfo> {
-  const data = await youtubeFetch<YouTubeListResponse<ChannelItem>>("channels", {
+async function fetchChannelByUsername(
+  apiKey: string,
+  username: string,
+): Promise<ChannelInfo> {
+  const data = await youtubeFetch<YouTubeListResponse<ChannelItem>>(apiKey, "channels", {
     part: "snippet,contentDetails",
     forUsername: username,
   });
@@ -117,10 +119,10 @@ async function fetchChannelByUsername(username: string): Promise<ChannelInfo> {
   return channelFromItem(item);
 }
 
-async function searchChannel(query: string): Promise<ChannelInfo> {
+async function searchChannel(apiKey: string, query: string): Promise<ChannelInfo> {
   const data = await youtubeFetch<
     YouTubeListResponse<{ id?: { channelId?: string } }>
-  >("search", {
+  >(apiKey, "search", {
     part: "snippet",
     type: "channel",
     q: query,
@@ -132,21 +134,22 @@ async function searchChannel(query: string): Promise<ChannelInfo> {
     throw new Error("Channel not found");
   }
 
-  return fetchChannelById(channelId);
+  return fetchChannelById(apiKey, channelId);
 }
 
 export async function resolveChannel(
   parsed: ParsedChannelInput,
+  apiKey: string,
 ): Promise<ChannelInfo> {
   switch (parsed.type) {
     case "channelId":
-      return fetchChannelById(parsed.value);
+      return fetchChannelById(apiKey, parsed.value);
     case "handle":
-      return fetchChannelByHandle(parsed.value);
+      return fetchChannelByHandle(apiKey, parsed.value);
     case "username":
-      return fetchChannelByUsername(parsed.value);
+      return fetchChannelByUsername(apiKey, parsed.value);
     case "custom":
-      return searchChannel(parsed.value);
+      return searchChannel(apiKey, parsed.value);
   }
 }
 
@@ -165,10 +168,10 @@ export function formatDuration(isoDuration: string): string {
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
-async function fetchVideoDetails(videoIds: string[]): Promise<Video[]> {
+async function fetchVideoDetails(apiKey: string, videoIds: string[]): Promise<Video[]> {
   if (videoIds.length === 0) return [];
 
-  const data = await youtubeFetch<YouTubeListResponse<VideoItem>>("videos", {
+  const data = await youtubeFetch<YouTubeListResponse<VideoItem>>(apiKey, "videos", {
     part: "snippet,contentDetails",
     id: videoIds.join(","),
   });
@@ -187,6 +190,7 @@ async function fetchVideoDetails(videoIds: string[]): Promise<Video[]> {
 
 export async function fetchAllVideos(
   uploadsPlaylistId: string,
+  apiKey: string,
 ): Promise<Video[]> {
   const videoIds: string[] = [];
   let pageToken: string | undefined;
@@ -202,6 +206,7 @@ export async function fetchAllVideos(
     }
 
     const data = await youtubeFetch<YouTubeListResponse<PlaylistItem>>(
+      apiKey,
       "playlistItems",
       params,
     );
@@ -219,7 +224,7 @@ export async function fetchAllVideos(
   const videos: Video[] = [];
   for (let i = 0; i < videoIds.length; i += 50) {
     const batch = videoIds.slice(i, i + 50);
-    const details = await fetchVideoDetails(batch);
+    const details = await fetchVideoDetails(apiKey, batch);
     videos.push(...details);
   }
 

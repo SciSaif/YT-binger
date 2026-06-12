@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveYouTubeApiKey } from "@/lib/youtube-server-key";
 import { fetchAllVideos } from "@/lib/youtube";
 
 export async function GET(request: Request) {
@@ -14,7 +15,8 @@ export async function GET(request: Request) {
       );
     }
 
-    const videos = await fetchAllVideos(uploadsPlaylistId);
+    const apiKey = resolveYouTubeApiKey(request);
+    const videos = await fetchAllVideos(uploadsPlaylistId, apiKey);
     return NextResponse.json({ channelId, videos });
   } catch (error) {
     const message =

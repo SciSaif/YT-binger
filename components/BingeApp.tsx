@@ -8,6 +8,7 @@ import { UpToHereDialog } from "@/components/UpToHereDialog";
 import { VideoList } from "@/components/VideoList";
 import { VisitedChannelsList } from "@/components/VisitedChannelsList";
 import { sortVideos, getNextVideo } from "@/lib/next-video";
+import { apiFetch } from "@/lib/api-client";
 import { isVideoCacheStale, useAppState } from "@/lib/storage";
 import type { ChannelInfo, ChannelProgress, SortOrder, Video, VisitedChannel } from "@/types";
 
@@ -60,7 +61,7 @@ export function BingeApp() {
 
       setLoadingVideos(true);
       try {
-        const response = await fetch(
+        const response = await apiFetch(
           `/api/channel/videos?channelId=${encodeURIComponent(channelInfo.channelId)}&uploadsPlaylistId=${encodeURIComponent(channelInfo.uploadsPlaylistId)}`,
         );
         const data = (await response.json()) as {
@@ -115,7 +116,7 @@ export function BingeApp() {
       setLastUrl(url);
 
       try {
-        const resolveResponse = await fetch("/api/channel/resolve", {
+        const resolveResponse = await apiFetch("/api/channel/resolve", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url }),
