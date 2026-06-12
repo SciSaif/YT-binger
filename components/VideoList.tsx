@@ -48,6 +48,7 @@ export function VideoList({
   const [focusIndex, setFocusIndex] = useState(0);
   const [findUrl, setFindUrl] = useState("");
   const [findError, setFindError] = useState<string | null>(null);
+  const autoAnchorKeyRef = useRef("");
 
   const virtualizer = useVirtualizer({
     count: videos.length,
@@ -56,21 +57,45 @@ export function VideoList({
     overscan: OVERSCAN,
   });
 
-  const scrollToIndex = useCallback(
+  const scrollToVideo = useCallback(
     (index: number, behavior: ScrollBehavior = "smooth") => {
       const clamped = Math.max(0, Math.min(index, videos.length - 1));
+      const video = videos[clamped];
+      if (!video) return;
+
       setFocusIndex(clamped);
-      virtualizer.scrollToIndex(clamped, { align: "center", behavior });
+      virtualizer.scrollToIndex(clamped, { align: "center", behavior: "auto" });
+
+      const scrollRowIntoView = (scrollBehavior: ScrollBehavior) => {
+        const container = parentRef.current;
+        const row = container?.querySelector(`#video-row-${video.id}`);
+        if (row) {
+          row.scrollIntoView({ block: "center", behavior: scrollBehavior });
+          container?.focus({ preventScroll: true });
+          return;
+        }
+
+        virtualizer.scrollToIndex(clamped, { align: "center", behavior: scrollBehavior });
+      };
+
+      requestAnimationFrame(() => {
+        scrollRowIntoView(behavior);
+        requestAnimationFrame(() => scrollRowIntoView(behavior));
+      });
     },
-    [videos.length, virtualizer],
+    [videos, virtualizer],
   );
 
   useEffect(() => {
     if (videos.length === 0) return;
+
+    const anchorKey = `${videos.length}:${nextVideoId ?? ""}:${latestWatchedId ?? ""}`;
+    if (anchorKey === autoAnchorKeyRef.current) return;
+    autoAnchorKeyRef.current = anchorKey;
+
     const anchorIndex = getAnchorIndex(videos, nextVideoId, latestWatchedId);
-    setFocusIndex(anchorIndex);
-    virtualizer.scrollToIndex(anchorIndex, { align: "center", behavior: "auto" });
-  }, [videos, nextVideoId, latestWatchedId, virtualizer]);
+    scrollToVideo(anchorIndex, "auto");
+  }, [videos, nextVideoId, latestWatchedId, scrollToVideo]);
 
   useEffect(() => {
     const container = parentRef.current;
@@ -79,16 +104,16 @@ export function VideoList({
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "ArrowUp") {
         event.preventDefault();
-        scrollToIndex(focusIndex - 1);
+        scrollToVideo(focusIndex - 1);
       } else if (event.key === "ArrowDown") {
         event.preventDefault();
-        scrollToIndex(focusIndex + 1);
+        scrollToVideo(focusIndex + 1);
       }
     }
 
     container.addEventListener("keydown", onKeyDown);
     return () => container.removeEventListener("keydown", onKeyDown);
-  }, [focusIndex, scrollToIndex]);
+  }, [focusIndex, scrollToVideo]);
 
   function handleFindVideo(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -106,8 +131,7 @@ export function VideoList({
       return;
     }
 
-    scrollToIndex(index);
-    parentRef.current?.focus();
+    scrollToVideo(index);
   }
 
   if (videos.length === 0) {
@@ -164,7 +188,7 @@ export function VideoList({
         <div className="flex shrink-0 gap-2">
           <button
             type="button"
-            onClick={() => scrollToIndex(focusIndex - 1)}
+            onClick={() => scrollToVideo(focusIndex - 1)}
             disabled={!canGoUp}
             className="rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 transition-colors hover:border-zinc-500 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
           >
@@ -172,7 +196,7 @@ export function VideoList({
           </button>
           <button
             type="button"
-            onClick={() => scrollToIndex(focusIndex + 1)}
+            onClick={() => scrollToVideo(focusIndex + 1)}
             disabled={!canGoDown}
             className="rounded-lg border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 transition-colors hover:border-zinc-500 hover:text-zinc-100 disabled:cursor-not-allowed disabled:opacity-40"
           >
