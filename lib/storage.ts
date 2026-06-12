@@ -27,6 +27,20 @@ function emitChange(): void {
   }
 }
 
+export function readAppState(): AppState {
+  return readStateFromStorage();
+}
+
+export function replaceAppState(state: AppState): void {
+  clientState = {
+    progress: state.progress ?? {},
+    videoCache: state.videoCache ?? {},
+    visitedChannels: state.visitedChannels ?? [],
+  };
+  writeState(clientState);
+  emitChange();
+}
+
 function readStateFromStorage(): AppState {
   if (typeof window === "undefined") {
     return DEFAULT_STATE;

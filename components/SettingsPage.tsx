@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ApiKeyForm } from "@/components/ApiKeyForm";
 import { ApiKeyOnboarding } from "@/components/ApiKeyOnboarding";
+import { DataBackupSection } from "@/components/DataBackupSection";
 import { getApiKeyModeLabel } from "@/lib/api-key-storage";
 import { useApiKeySettings } from "@/lib/use-api-key-settings";
 import type { ApiKeyMode } from "@/types/api-key";
@@ -53,8 +54,7 @@ export function SettingsPage() {
 
         <h1 className="mt-6 text-3xl font-bold text-white">Settings</h1>
         <p className="mt-2 text-sm text-zinc-400">
-          Manage your YouTube API key. Currently using{" "}
-          <span className="text-zinc-300">{getApiKeyModeLabel(settings.mode)}</span>.
+          Manage your YouTube API key and local app data.
         </p>
 
         {saved ? (
@@ -63,15 +63,26 @@ export function SettingsPage() {
           </p>
         ) : null}
 
-        <div className="mt-8 rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
-          <ApiKeyForm
-            initialMode={settings.mode}
-            initialCustomKey={settings.customKey}
-            guestKeyAvailable={guestKeyAvailable}
-            submitLabel="Save changes"
-            showGuestOption
-            onSubmit={handleSave}
-          />
+        <div className="mt-8 space-y-8">
+          <section className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6">
+            <h2 className="text-lg font-semibold text-white">YouTube API key</h2>
+            <p className="mt-2 text-sm text-zinc-400">
+              Currently using{" "}
+              <span className="text-zinc-300">{getApiKeyModeLabel(settings.mode)}</span>.
+            </p>
+            <div className="mt-5">
+              <ApiKeyForm
+                initialMode={settings.mode}
+                initialCustomKey={settings.customKey}
+                guestKeyAvailable={guestKeyAvailable}
+                submitLabel="Save changes"
+                showGuestOption
+                onSubmit={handleSave}
+              />
+            </div>
+          </section>
+
+          <DataBackupSection />
         </div>
       </div>
     </div>

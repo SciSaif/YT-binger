@@ -41,6 +41,14 @@ function persistSettings(settings: ApiKeySettings): void {
   emitChange();
 }
 
+export function replaceApiKeySettings(settings: ApiKeySettings): void {
+  persistSettings({
+    onboardingComplete: settings.onboardingComplete,
+    mode: settings.mode === "custom" ? "custom" : "guest",
+    customKey: settings.customKey ?? "",
+  });
+}
+
 export function useApiKeySettings() {
   const settings = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const hydrated = useSyncExternalStore(
