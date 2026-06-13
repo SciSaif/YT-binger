@@ -351,7 +351,15 @@ export function BingeApp() {
                 </div>
               ) : (
                 <>
-                  <NextVideoCard video={nextVideo} completed={allWatched && !nextVideo} />
+                  <NextVideoCard
+                    video={nextVideo}
+                    completed={allWatched && !nextVideo}
+                    onMarkWatched={
+                      nextVideo
+                        ? () => handleToggleWatched(nextVideo.id, true)
+                        : undefined
+                    }
+                  />
 
                   <VideoList
                     videos={sortedVideos}

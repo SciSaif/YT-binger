@@ -3,6 +3,7 @@ import type { Video } from "@/types";
 interface NextVideoCardProps {
   video: Video | null;
   completed: boolean;
+  onMarkWatched?: () => void;
 }
 
 function formatDate(iso: string): string {
@@ -13,7 +14,7 @@ function formatDate(iso: string): string {
   });
 }
 
-export function NextVideoCard({ video, completed }: NextVideoCardProps) {
+export function NextVideoCard({ video, completed, onMarkWatched }: NextVideoCardProps) {
   if (completed) {
     return (
       <section className="rounded-xl border border-emerald-800/50 bg-emerald-950/30 p-6">
@@ -61,14 +62,25 @@ export function NextVideoCard({ video, completed }: NextVideoCardProps) {
           <p className="mt-1 text-sm text-zinc-400">
             {formatDate(video.publishedAt)} · {video.duration}
           </p>
-          <a
-            href={`https://www.youtube.com/watch?v=${video.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-red-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-500"
-          >
-            Watch on YouTube
-          </a>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <a
+              href={`https://www.youtube.com/watch?v=${video.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-500"
+            >
+              Watch on YouTube
+            </a>
+            {onMarkWatched ? (
+              <button
+                type="button"
+                onClick={onMarkWatched}
+                className="rounded-lg border border-zinc-700 px-5 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:border-zinc-500 hover:text-zinc-100"
+              >
+                Mark watched
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
     </section>
