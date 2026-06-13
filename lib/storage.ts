@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useSyncExternalStore } from "react";
+import { scheduleCloudSync } from "@/lib/cloud-sync";
 import type { AppState, ChannelInfo, SortOrder, VideoCache, VisitedChannel } from "@/types";
 
 const STORAGE_KEY = "yt-binger";
@@ -38,6 +39,7 @@ export function replaceAppState(state: AppState): void {
     visitedChannels: state.visitedChannels ?? [],
   };
   writeState(clientState);
+  scheduleCloudSync(clientState);
   emitChange();
 }
 
@@ -80,6 +82,7 @@ function updateState(updater: (prev: AppState) => AppState): void {
   const next = updater(prev);
   clientState = next;
   writeState(next);
+  scheduleCloudSync(next);
   emitChange();
 }
 

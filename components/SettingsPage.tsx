@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ApiKeyForm } from "@/components/ApiKeyForm";
 import { ApiKeyOnboarding } from "@/components/ApiKeyOnboarding";
+import { CloudSyncSection } from "@/components/CloudSyncSection";
 import { DataBackupSection } from "@/components/DataBackupSection";
 import { getApiKeyModeLabel } from "@/lib/api-key-storage";
 import { useApiKeySettings } from "@/lib/use-api-key-settings";
@@ -54,7 +55,7 @@ export function SettingsPage() {
 
         <h1 className="mt-6 text-3xl font-bold text-white">Settings</h1>
         <p className="mt-2 text-sm text-zinc-400">
-          Manage your YouTube API key and local app data.
+          Manage your YouTube API key, optional cloud sync, and local app data.
         </p>
 
         {saved ? (
@@ -81,6 +82,8 @@ export function SettingsPage() {
               />
             </div>
           </section>
+
+          <CloudSyncSection />
 
           <DataBackupSection />
         </div>

@@ -1,12 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { ApiKeyOnboarding } from "@/components/ApiKeyOnboarding";
 import { BingeApp } from "@/components/BingeApp";
 import { useApiKeySettings } from "@/lib/use-api-key-settings";
+import { refreshAuth } from "@/lib/use-auth";
 
 export function AppShell() {
   const { settings, hydrated, finishOnboarding } = useApiKeySettings();
+
+  useEffect(() => {
+    void refreshAuth();
+  }, []);
 
   if (!hydrated) {
     return (
