@@ -1,7 +1,7 @@
 "use client";
 
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { FormEvent, MutableRefObject, useCallback, useEffect, useRef, useState } from "react";
 import { findVideoIndex, parseVideoUrl } from "@/lib/video-url";
 import type { Video } from "@/types";
 import { VideoRow } from "./VideoRow";
@@ -13,6 +13,8 @@ interface VideoListProps {
   nextVideoId: string | null;
   onToggleWatched: (videoId: string, watched: boolean) => void;
   onRequestSetLatestWatched: (video: Video) => void;
+  /** When true for one render cycle, skip auto-scroll to the progress anchor. */
+  skipAutoScrollRef?: MutableRefObject<boolean>;
 }
 
 const ROW_ESTIMATE_PX = 120;
@@ -43,6 +45,7 @@ export function VideoList({
   nextVideoId,
   onToggleWatched,
   onRequestSetLatestWatched,
+  skipAutoScrollRef,
 }: VideoListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const [focusIndex, setFocusIndex] = useState(0);
@@ -93,9 +96,14 @@ export function VideoList({
     if (anchorKey === autoAnchorKeyRef.current) return;
     autoAnchorKeyRef.current = anchorKey;
 
+    if (skipAutoScrollRef?.current) {
+      skipAutoScrollRef.current = false;
+      return;
+    }
+
     const anchorIndex = getAnchorIndex(videos, nextVideoId, latestWatchedId);
     scrollToVideo(anchorIndex, "auto");
-  }, [videos, nextVideoId, latestWatchedId, scrollToVideo]);
+  }, [videos, nextVideoId, latestWatchedId, scrollToVideo, skipAutoScrollRef]);
 
   useEffect(() => {
     const container = parentRef.current;

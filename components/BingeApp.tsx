@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { ChannelHeader } from "@/components/ChannelHeader";
 import { ChannelInput } from "@/components/ChannelInput";
 import { NextVideoCard } from "@/components/NextVideoCard";
@@ -80,6 +80,7 @@ export function BingeApp() {
 
   const [activeSource, setActiveSource] = useState<ActiveSource | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
+  const skipListAutoScrollRef = useRef(false);
   const [loadingSource, setLoadingSource] = useState(false);
   const [loadingSourceId, setLoadingSourceId] = useState<string | null>(null);
   const [loadingVideos, setLoadingVideos] = useState(false);
@@ -629,7 +630,10 @@ export function BingeApp() {
                     completed={allWatched && !nextVideo}
                     onMarkWatched={
                       nextVideo
-                        ? () => handleToggleWatched(nextVideo.id, true)
+                        ? () => {
+                            skipListAutoScrollRef.current = true;
+                            handleToggleWatched(nextVideo.id, true);
+                          }
                         : undefined
                     }
                   />
@@ -641,6 +645,7 @@ export function BingeApp() {
                     nextVideoId={nextVideo?.id ?? null}
                     onToggleWatched={handleToggleWatched}
                     onRequestSetLatestWatched={handleRequestSetLatestWatched}
+                    skipAutoScrollRef={skipListAutoScrollRef}
                   />
                 </>
               )}

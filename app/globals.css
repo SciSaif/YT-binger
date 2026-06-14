@@ -16,3 +16,74 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+@keyframes check-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes badge-pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.85) translateY(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes row-watched-flash {
+  0% {
+    background-color: rgb(6 78 59 / 0.35);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes next-row-glow {
+  0% {
+    background-color: rgb(127 29 29 / 0.45);
+    box-shadow: inset 0 0 0 1px rgb(248 113 113 / 0.25);
+  }
+  100% {
+    background-color: rgb(76 5 25 / 0.3);
+    box-shadow: inset 0 0 0 0 rgb(248 113 113 / 0);
+  }
+}
+
+.animate-check-pop {
+  animation: check-pop 360ms ease-out;
+}
+
+.animate-badge-pop-in {
+  animation: badge-pop-in 300ms ease-out;
+}
+
+.animate-row-watched-flash {
+  animation: row-watched-flash 450ms ease-out;
+}
+
+.animate-next-row-glow {
+  animation: next-row-glow 420ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-check-pop,
+  .animate-badge-pop-in,
+  .animate-row-watched-flash,
+  .animate-next-row-glow {
+    animation: none;
+  }
+}
