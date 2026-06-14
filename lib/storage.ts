@@ -483,6 +483,36 @@ export function useAppState() {
     [persist],
   );
 
+  const removeChannel = useCallback(
+    (channelId: string) => {
+      persist((prev) => {
+        const { [channelId]: _progress, ...progress } = prev.progress;
+        const { [channelId]: _cache, ...videoCache } = prev.videoCache;
+        const visitedChannels = prev.visitedChannels.filter(
+          (visited) => visited.channelId !== channelId,
+        );
+
+        return { ...prev, progress, videoCache, visitedChannels };
+      });
+    },
+    [persist],
+  );
+
+  const removePlaylist = useCallback(
+    (playlistId: string) => {
+      persist((prev) => {
+        const { [playlistId]: _progress, ...playlistProgress } = prev.playlistProgress;
+        const { [playlistId]: _cache, ...playlistVideoCache } = prev.playlistVideoCache;
+        const visitedPlaylists = prev.visitedPlaylists.filter(
+          (visited) => visited.playlistId !== playlistId,
+        );
+
+        return { ...prev, playlistProgress, playlistVideoCache, visitedPlaylists };
+      });
+    },
+    [persist],
+  );
+
   return {
     state,
     getProgress,
@@ -503,5 +533,7 @@ export function useAppState() {
     getPlaylistVideoCache,
     setPlaylistVideoCache,
     recordPlaylistVisit,
+    removeChannel,
+    removePlaylist,
   };
 }

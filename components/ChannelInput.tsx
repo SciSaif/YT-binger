@@ -21,27 +21,33 @@ export function ChannelInput({ onLoad, loading, initialUrl = "" }: ChannelInputP
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full flex-col gap-3 sm:flex-row">
-      <input
-        ref={inputRef}
-        name="channelUrl"
-        type="text"
-        value={url}
-        onChange={(event) => setUrl(event.target.value)}
-        onInput={(event) => setUrl(event.currentTarget.value)}
-        placeholder="Paste a channel (@handle, /channel/UC…) or playlist (/playlist?list=PL…) URL"
-        autoComplete="off"
-        className="flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
-        disabled={loading}
-      />
-      <button
-        type="submit"
-        disabled={loading}
-        aria-busy={loading}
-        className="rounded-lg bg-red-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {loading ? "Loading…" : "Load"}
-      </button>
-    </form>
+    <section className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-5 sm:p-6">
+      <h2 className="text-sm font-medium text-zinc-300">Load a channel or playlist</h2>
+      <p className="mt-1 text-xs text-zinc-500">
+        Paste any YouTube channel URL, @handle, or playlist link.
+      </p>
+      <form onSubmit={handleSubmit} className="mt-4 flex w-full flex-col gap-3 sm:flex-row">
+        <input
+          ref={inputRef}
+          name="channelUrl"
+          type="text"
+          value={url}
+          onChange={(event) => setUrl(event.target.value)}
+          onInput={(event) => setUrl(event.currentTarget.value)}
+          placeholder="https://youtube.com/@channel or /playlist?list=PL…"
+          autoComplete="off"
+          className="flex-1 rounded-xl border border-zinc-700/80 bg-zinc-950 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-red-500/80 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+          disabled={loading}
+        />
+        <button
+          type="submit"
+          disabled={loading}
+          aria-busy={loading}
+          className="rounded-xl bg-red-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-red-900/20 transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {loading ? "Loading…" : "Load"}
+        </button>
+      </form>
+    </section>
   );
 }

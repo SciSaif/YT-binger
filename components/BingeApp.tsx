@@ -74,6 +74,8 @@ export function BingeApp() {
     getPlaylistVideoCache,
     setPlaylistVideoCache,
     recordPlaylistVisit,
+    removeChannel,
+    removePlaylist,
   } = useAppState();
 
   const [activeSource, setActiveSource] = useState<ActiveSource | null>(null);
@@ -485,10 +487,13 @@ export function BingeApp() {
       <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
         {isHome ? (
           <>
-            <header className="mb-10">
-              <h1 className="text-3xl font-bold tracking-tight text-white">YT Binger</h1>
-              <p className="mt-2 text-zinc-400">
-                Binge YouTube channels or playlists in order — never miss a video.
+            <header className="mb-8">
+              <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                YT Binger
+              </h1>
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-400 sm:text-base">
+                Binge YouTube channels or playlists in order — track what you&apos;ve watched
+                and never miss a video.
               </p>
             </header>
 
@@ -501,42 +506,61 @@ export function BingeApp() {
             {error ? (
               <p
                 role="alert"
-                className="mt-4 rounded-lg border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-300"
+                className="mt-4 rounded-xl border border-red-900/50 bg-red-950/30 px-4 py-3 text-sm text-red-300"
               >
                 {error}
               </p>
             ) : null}
 
-            <VisitedChannelsList
-              channels={state.visitedChannels}
-              progress={state.progress}
-              videoCache={state.videoCache}
-              onOpen={openVisitedChannel}
-              loadingChannelId={
-                loadingSourceId && state.visitedChannels.some(
-                  (visited) => visited.channelId === loadingSourceId,
-                )
-                  ? loadingSourceId
-                  : null
-              }
-            />
+            {(state.visitedChannels.length > 0 ||
+              (state.visitedPlaylists ?? []).length > 0) && (
+              <div className="mt-8 rounded-2xl border border-zinc-800/60 bg-zinc-900/20 p-5 sm:p-6">
+                <VisitedChannelsList
+                  channels={state.visitedChannels}
+                  progress={state.progress}
+                  videoCache={state.videoCache}
+                  onOpen={openVisitedChannel}
+                  onRemove={removeChannel}
+                  loadingChannelId={
+                    loadingSourceId &&
+                    state.visitedChannels.some(
+                      (visited) => visited.channelId === loadingSourceId,
+                    )
+                      ? loadingSourceId
+                      : null
+                  }
+                />
 
-            <VisitedPlaylistsList
-              playlists={state.visitedPlaylists ?? []}
-              progress={state.playlistProgress ?? {}}
-              videoCache={state.playlistVideoCache ?? {}}
-              onOpen={openVisitedPlaylist}
-              loadingPlaylistId={
-                loadingSourceId && (state.visitedPlaylists ?? []).some(
-                  (visited) => visited.playlistId === loadingSourceId,
-                )
-                  ? loadingSourceId
-                  : null
-              }
-            />
+                <VisitedPlaylistsList
+                  playlists={state.visitedPlaylists ?? []}
+                  progress={state.playlistProgress ?? {}}
+                  videoCache={state.playlistVideoCache ?? {}}
+                  onOpen={openVisitedPlaylist}
+                  onRemove={removePlaylist}
+                  loadingPlaylistId={
+                    loadingSourceId &&
+                    (state.visitedPlaylists ?? []).some(
+                      (visited) => visited.playlistId === loadingSourceId,
+                    )
+                      ? loadingSourceId
+                      : null
+                  }
+                />
+              </div>
+            )}
+
+            {state.visitedChannels.length === 0 &&
+            (state.visitedPlaylists ?? []).length === 0 &&
+            !isLoading ? (
+              <div className="mt-8 rounded-2xl border border-dashed border-zinc-800 px-6 py-10 text-center">
+                <p className="text-sm text-zinc-500">
+                  No saved channels or playlists yet. Load one above to get started.
+                </p>
+              </div>
+            ) : null}
 
             {isLoading ? (
-              <p role="status" className="mt-8 text-center text-zinc-500">
+              <p role="status" className="mt-6 text-center text-sm text-zinc-500">
                 Loading…
               </p>
             ) : null}
