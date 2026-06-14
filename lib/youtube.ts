@@ -1,4 +1,9 @@
-import type { ChannelInfo, ParsedChannelInput, Video } from "@/types";
+import type { ChannelInfo, ParsedChannelInput, PlaylistInfo, Video } from "@/types";
+import {
+  getPlaylistVideoLimit,
+  isMixPlaylist,
+  MAX_PLAYLIST_PAGES,
+} from "@/lib/playlist-limits";
 
 const YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3";
 
@@ -20,6 +25,11 @@ interface PlaylistItem {
   snippet?: {
     resourceId?: { videoId?: string };
   };
+}
+
+interface PlaylistMetaItem {
+  id: string;
+  snippet?: { title?: string };
 }
 
 interface VideoItem {
@@ -153,6 +163,30 @@ export async function resolveChannel(
   }
 }
 
+export async function resolvePlaylist(
+  playlistId: string,
+  apiKey: string,
+): Promise<PlaylistInfo> {
+  const data = await youtubeFetch<YouTubeListResponse<PlaylistMetaItem>>(
+    apiKey,
+    "playlists",
+    {
+      part: "snippet",
+      id: playlistId,
+    },
+  );
+
+  const item = data.items?.[0];
+  if (!item) {
+    throw new Error("Playlist not found");
+  }
+
+  return {
+    playlistId: item.id,
+    title: item.snippet?.title ?? "Unknown playlist",
+  };
+}
+
 export function formatDuration(isoDuration: string): string {
   const match = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   if (!match) return isoDuration;
@@ -188,17 +222,24 @@ async function fetchVideoDetails(apiKey: string, videoIds: string[]): Promise<Vi
   }));
 }
 
-export async function fetchAllVideos(
-  uploadsPlaylistId: string,
+async function collectPlaylistVideoIds(
+  playlistId: string,
   apiKey: string,
-): Promise<Video[]> {
+  maxItems = getPlaylistVideoLimit(playlistId),
+): Promise<string[]> {
   const videoIds: string[] = [];
+  const seenPageTokens = new Set<string>();
   let pageToken: string | undefined;
+  let pages = 0;
 
   do {
+    if (pages >= MAX_PLAYLIST_PAGES || videoIds.length >= maxItems) {
+      break;
+    }
+
     const params: Record<string, string> = {
       part: "snippet",
-      playlistId: uploadsPlaylistId,
+      playlistId,
       maxResults: "50",
     };
     if (pageToken) {
@@ -211,17 +252,70 @@ export async function fetchAllVideos(
       params,
     );
 
+    pages += 1;
+
     for (const item of data.items ?? []) {
       const videoId = item.snippet?.resourceId?.videoId;
       if (videoId) {
         videoIds.push(videoId);
+        if (videoIds.length >= maxItems) {
+          break;
+        }
       }
     }
 
-    pageToken = data.nextPageToken;
+    const nextPageToken = data.nextPageToken;
+    if (!nextPageToken || seenPageTokens.has(nextPageToken)) {
+      break;
+    }
+
+    seenPageTokens.add(nextPageToken);
+    pageToken = nextPageToken;
   } while (pageToken);
 
+  return videoIds.slice(0, maxItems);
+}
+
+export interface FetchPlaylistVideosResult {
+  videos: Video[];
+  truncated: boolean;
+  limit: number;
+}
+
+export async function fetchPlaylistVideos(
+  playlistId: string,
+  apiKey: string,
+): Promise<FetchPlaylistVideosResult> {
+  const limit = getPlaylistVideoLimit(playlistId);
+  const videoIds = await collectPlaylistVideoIds(playlistId, apiKey, limit);
+  const detailsById = new Map<string, Video>();
+
+  for (let i = 0; i < videoIds.length; i += 50) {
+    const batch = videoIds.slice(i, i + 50);
+    const details = await fetchVideoDetails(apiKey, batch);
+    for (const video of details) {
+      detailsById.set(video.id, video);
+    }
+  }
+
+  const videos = videoIds
+    .map((id) => detailsById.get(id))
+    .filter((video): video is Video => video !== undefined);
+
+  return {
+    videos,
+    truncated: isMixPlaylist(playlistId) || videos.length >= limit,
+    limit,
+  };
+}
+
+export async function fetchAllVideos(
+  uploadsPlaylistId: string,
+  apiKey: string,
+): Promise<Video[]> {
+  const videoIds = await collectPlaylistVideoIds(uploadsPlaylistId, apiKey);
   const videos: Video[] = [];
+
   for (let i = 0; i < videoIds.length; i += 50) {
     const batch = videoIds.slice(i, i + 50);
     const details = await fetchVideoDetails(apiKey, batch);

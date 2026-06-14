@@ -9,11 +9,19 @@ export function sortVideos(videos: Video[], sortOrder: SortOrder): Video[] {
   return sortOrder === "newest" ? sorted.reverse() : sorted;
 }
 
+export function sortPlaylistVideos(videos: Video[], sortOrder: SortOrder): Video[] {
+  return sortOrder === "newest" ? [...videos].reverse() : [...videos];
+}
+
 export function getNextVideo(
   videos: Video[],
   progress: Pick<ChannelProgress, "watchedIds" | "latestWatchedId" | "sortOrder">,
+  options?: { order?: "published" | "playlist" },
 ): Video | null {
-  const sorted = sortVideos(videos, progress.sortOrder);
+  const sorted =
+    options?.order === "playlist"
+      ? sortPlaylistVideos(videos, progress.sortOrder)
+      : sortVideos(videos, progress.sortOrder);
   const watchedSet = new Set(progress.watchedIds);
 
   if (progress.latestWatchedId) {

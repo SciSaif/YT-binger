@@ -1,7 +1,17 @@
 import { readApiKeySettings } from "@/lib/api-key-storage";
 import { readAppState, replaceAppState } from "@/lib/storage";
 import { replaceApiKeySettings } from "@/lib/use-api-key-settings";
-import type { AppState, ChannelProgress, SortOrder, Video, VideoCache, VisitedChannel } from "@/types";
+import type {
+  AppState,
+  ChannelProgress,
+  PlaylistProgress,
+  PlaylistVideoCache,
+  SortOrder,
+  Video,
+  VideoCache,
+  VisitedChannel,
+  VisitedPlaylist,
+} from "@/types";
 import type { ApiKeySettings } from "@/types/api-key";
 import { BACKUP_VERSION, type YtBingerBackup } from "@/types/backup";
 
@@ -75,6 +85,55 @@ function normalizeVisitedChannel(value: unknown): VisitedChannel | null {
   };
 }
 
+function normalizeVisitedPlaylist(value: unknown): VisitedPlaylist | null {
+  if (
+    !isRecord(value) ||
+    typeof value.playlistId !== "string" ||
+    typeof value.playlistTitle !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    playlistId: value.playlistId,
+    playlistTitle: value.playlistTitle,
+    lastVisitedAt:
+      typeof value.lastVisitedAt === "number" ? value.lastVisitedAt : Date.now(),
+    sourceUrl: typeof value.sourceUrl === "string" ? value.sourceUrl : undefined,
+  };
+}
+
+function normalizePlaylistProgress(value: unknown): PlaylistProgress | null {
+  if (!isRecord(value) || typeof value.playlistId !== "string") return null;
+
+  return {
+    playlistId: value.playlistId,
+    playlistTitle:
+      typeof value.playlistTitle === "string" ? value.playlistTitle : "Unknown playlist",
+    watchedIds: Array.isArray(value.watchedIds)
+      ? value.watchedIds.filter((id): id is string => typeof id === "string")
+      : [],
+    latestWatchedId:
+      typeof value.latestWatchedId === "string" ? value.latestWatchedId : null,
+    sortOrder: normalizeSortOrder(value.sortOrder),
+  };
+}
+
+function normalizePlaylistVideoCache(value: unknown): PlaylistVideoCache | null {
+  if (!isRecord(value) || typeof value.playlistId !== "string") return null;
+  if (!Array.isArray(value.videos)) return null;
+
+  const videos = value.videos
+    .map(normalizeVideo)
+    .filter((video): video is Video => video !== null);
+
+  return {
+    playlistId: value.playlistId,
+    videos,
+    fetchedAt: typeof value.fetchedAt === "number" ? value.fetchedAt : Date.now(),
+  };
+}
+
 function normalizeAppState(value: unknown): AppState | null {
   if (!isRecord(value)) return null;
 
@@ -100,7 +159,36 @@ function normalizeAppState(value: unknown): AppState | null {
         .filter((entry): entry is VisitedChannel => entry !== null)
     : [];
 
-  return { progress, videoCache, visitedChannels };
+  const playlistProgress: Record<string, PlaylistProgress> = {};
+  if (isRecord(value.playlistProgress)) {
+    for (const [key, entry] of Object.entries(value.playlistProgress)) {
+      const normalized = normalizePlaylistProgress(entry);
+      if (normalized) playlistProgress[key] = normalized;
+    }
+  }
+
+  const playlistVideoCache: Record<string, PlaylistVideoCache> = {};
+  if (isRecord(value.playlistVideoCache)) {
+    for (const [key, entry] of Object.entries(value.playlistVideoCache)) {
+      const normalized = normalizePlaylistVideoCache(entry);
+      if (normalized) playlistVideoCache[key] = normalized;
+    }
+  }
+
+  const visitedPlaylists = Array.isArray(value.visitedPlaylists)
+    ? value.visitedPlaylists
+        .map(normalizeVisitedPlaylist)
+        .filter((entry): entry is VisitedPlaylist => entry !== null)
+    : [];
+
+  return {
+    progress,
+    videoCache,
+    visitedChannels,
+    playlistProgress,
+    playlistVideoCache,
+    visitedPlaylists,
+  };
 }
 
 function normalizeApiKeySettings(value: unknown): ApiKeySettings | null {
@@ -169,10 +257,25 @@ export function downloadBackupFile(backup: YtBingerBackup): void {
 
 export function summarizeBackup(backup: YtBingerBackup): string {
   const channelCount = backup.app.visitedChannels.length;
-  const watchedTotal = Object.values(backup.app.progress).reduce(
-    (sum, progress) => sum + progress.watchedIds.length,
-    0,
-  );
+  const playlistCount = backup.app.visitedPlaylists?.length ?? 0;
+  const watchedTotal =
+    Object.values(backup.app.progress).reduce(
+      (sum, progress) => sum + progress.watchedIds.length,
+      0,
+    ) +
+    Object.values(backup.app.playlistProgress ?? {}).reduce(
+      (sum, progress) => sum + progress.watchedIds.length,
+      0,
+    );
 
-  return `${channelCount} channel${channelCount === 1 ? "" : "s"}, ${watchedTotal} watched video mark${watchedTotal === 1 ? "" : "s"}`;
+  const parts: string[] = [];
+  if (channelCount > 0) {
+    parts.push(`${channelCount} channel${channelCount === 1 ? "" : "s"}`);
+  }
+  if (playlistCount > 0) {
+    parts.push(`${playlistCount} playlist${playlistCount === 1 ? "" : "s"}`);
+  }
+
+  const sourceLabel = parts.length > 0 ? parts.join(", ") : "no sources";
+  return `${sourceLabel}, ${watchedTotal} watched video mark${watchedTotal === 1 ? "" : "s"}`;
 }

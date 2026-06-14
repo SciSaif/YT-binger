@@ -32,12 +32,41 @@ export interface AppState {
   progress: Record<string, ChannelProgress>;
   videoCache: Record<string, VideoCache>;
   visitedChannels: VisitedChannel[];
+  playlistProgress: Record<string, PlaylistProgress>;
+  playlistVideoCache: Record<string, PlaylistVideoCache>;
+  visitedPlaylists: VisitedPlaylist[];
 }
 
 export interface VisitedChannel {
   channelId: string;
   channelTitle: string;
   uploadsPlaylistId: string;
+  lastVisitedAt: number;
+  sourceUrl?: string;
+}
+
+export interface PlaylistInfo {
+  playlistId: string;
+  title: string;
+}
+
+export interface PlaylistProgress {
+  playlistId: string;
+  playlistTitle: string;
+  watchedIds: string[];
+  latestWatchedId: string | null;
+  sortOrder: SortOrder;
+}
+
+export interface PlaylistVideoCache {
+  playlistId: string;
+  videos: Video[];
+  fetchedAt: number;
+}
+
+export interface VisitedPlaylist {
+  playlistId: string;
+  playlistTitle: string;
   lastVisitedAt: number;
   sourceUrl?: string;
 }

@@ -29,7 +29,7 @@ export function ChannelInput({ onLoad, loading, initialUrl = "" }: ChannelInputP
         value={url}
         onChange={(event) => setUrl(event.target.value)}
         onInput={(event) => setUrl(event.currentTarget.value)}
-        placeholder="Paste channel URL or @handle (e.g. https://youtube.com/@mkbhd)"
+        placeholder="Paste a channel (@handle, /channel/UC…) or playlist (/playlist?list=PL…) URL"
         autoComplete="off"
         className="flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
         disabled={loading}
@@ -40,7 +40,7 @@ export function ChannelInput({ onLoad, loading, initialUrl = "" }: ChannelInputP
         aria-busy={loading}
         className="rounded-lg bg-red-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {loading ? "Loading…" : "Load channel"}
+        {loading ? "Loading…" : "Load"}
       </button>
     </form>
   );

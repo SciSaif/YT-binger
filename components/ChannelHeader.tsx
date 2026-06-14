@@ -15,7 +15,7 @@ export function ChannelHeader({ title, watchedLabel, onBack }: ChannelHeaderProp
         className="inline-flex items-center gap-2 text-sm text-zinc-400 transition-colors hover:text-zinc-200"
       >
         <span aria-hidden="true">←</span>
-        Back to channels
+        Back to home
       </button>
       <div>
         <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">

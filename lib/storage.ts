@@ -2,7 +2,17 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 import { scheduleCloudSync } from "@/lib/cloud-sync";
-import type { AppState, ChannelInfo, SortOrder, VideoCache, VisitedChannel } from "@/types";
+import type {
+  AppState,
+  ChannelInfo,
+  PlaylistInfo,
+  PlaylistProgress,
+  PlaylistVideoCache,
+  SortOrder,
+  VideoCache,
+  VisitedChannel,
+  VisitedPlaylist,
+} from "@/types";
 
 const STORAGE_KEY = "yt-binger";
 export const VIDEO_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -11,6 +21,9 @@ const DEFAULT_STATE: AppState = {
   progress: {},
   videoCache: {},
   visitedChannels: [],
+  playlistProgress: {},
+  playlistVideoCache: {},
+  visitedPlaylists: [],
 };
 
 let clientState: AppState | null = null;
@@ -33,14 +46,21 @@ export function readAppState(): AppState {
 }
 
 export function replaceAppState(state: AppState): void {
-  clientState = {
-    progress: state.progress ?? {},
-    videoCache: state.videoCache ?? {},
-    visitedChannels: state.visitedChannels ?? [],
-  };
+  clientState = normalizeStoredState(state);
   writeState(clientState);
   scheduleCloudSync(clientState);
   emitChange();
+}
+
+function normalizeStoredState(state: AppState): AppState {
+  return {
+    progress: state.progress ?? {},
+    videoCache: state.videoCache ?? {},
+    visitedChannels: state.visitedChannels ?? [],
+    playlistProgress: state.playlistProgress ?? {},
+    playlistVideoCache: state.playlistVideoCache ?? {},
+    visitedPlaylists: state.visitedPlaylists ?? [],
+  };
 }
 
 function readStateFromStorage(): AppState {
@@ -52,11 +72,7 @@ function readStateFromStorage(): AppState {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_STATE;
     const parsed = JSON.parse(raw) as AppState;
-    return {
-      progress: parsed.progress ?? {},
-      videoCache: parsed.videoCache ?? {},
-      visitedChannels: parsed.visitedChannels ?? [],
-    };
+    return normalizeStoredState(parsed);
   } catch {
     return DEFAULT_STATE;
   }
@@ -86,7 +102,9 @@ function updateState(updater: (prev: AppState) => AppState): void {
   emitChange();
 }
 
-export function isVideoCacheStale(cache: VideoCache | undefined): boolean {
+export function isVideoCacheStale(
+  cache: VideoCache | PlaylistVideoCache | undefined,
+): boolean {
   if (!cache) return true;
   return Date.now() - cache.fetchedAt > VIDEO_CACHE_TTL_MS;
 }
@@ -282,6 +300,189 @@ export function useAppState() {
     [persist],
   );
 
+  const getPlaylistProgress = useCallback(
+    (playlistId: string) => state.playlistProgress[playlistId],
+    [state.playlistProgress],
+  );
+
+  const initPlaylistProgress = useCallback(
+    (playlistId: string, playlistTitle: string) => {
+      persist((prev) => {
+        if (prev.playlistProgress[playlistId]) {
+          return {
+            ...prev,
+            playlistProgress: {
+              ...prev.playlistProgress,
+              [playlistId]: {
+                ...prev.playlistProgress[playlistId],
+                playlistTitle,
+              },
+            },
+          };
+        }
+
+        return {
+          ...prev,
+          playlistProgress: {
+            ...prev.playlistProgress,
+            [playlistId]: {
+              playlistId,
+              playlistTitle,
+              watchedIds: [],
+              latestWatchedId: null,
+              sortOrder: "oldest",
+            },
+          },
+        };
+      });
+    },
+    [persist],
+  );
+
+  const markPlaylistWatched = useCallback(
+    (playlistId: string, videoId: string) => {
+      persist((prev) => {
+        const current = prev.playlistProgress[playlistId];
+        if (!current) return prev;
+
+        const watchedIds = current.watchedIds.includes(videoId)
+          ? current.watchedIds
+          : [...current.watchedIds, videoId];
+
+        return {
+          ...prev,
+          playlistProgress: {
+            ...prev.playlistProgress,
+            [playlistId]: {
+              ...current,
+              watchedIds,
+              latestWatchedId: videoId,
+            },
+          },
+        };
+      });
+    },
+    [persist],
+  );
+
+  const unmarkPlaylistWatched = useCallback(
+    (playlistId: string, videoId: string) => {
+      persist((prev) => {
+        const current = prev.playlistProgress[playlistId];
+        if (!current) return prev;
+
+        return {
+          ...prev,
+          playlistProgress: {
+            ...prev.playlistProgress,
+            [playlistId]: {
+              ...current,
+              watchedIds: current.watchedIds.filter((id) => id !== videoId),
+              latestWatchedId:
+                current.latestWatchedId === videoId
+                  ? null
+                  : current.latestWatchedId,
+            },
+          },
+        };
+      });
+    },
+    [persist],
+  );
+
+  const setPlaylistLatestWatched = useCallback(
+    (
+      playlistId: string,
+      videoId: string,
+      options?: { markPreviousIds?: string[] },
+    ) => {
+      persist((prev) => {
+        const current = prev.playlistProgress[playlistId];
+        if (!current) return prev;
+
+        const markPreviousIds = options?.markPreviousIds ?? [];
+        const watchedIds =
+          markPreviousIds.length > 0
+            ? [...new Set([...current.watchedIds, ...markPreviousIds, videoId])]
+            : current.watchedIds;
+
+        return {
+          ...prev,
+          playlistProgress: {
+            ...prev.playlistProgress,
+            [playlistId]: {
+              ...current,
+              watchedIds,
+              latestWatchedId: videoId,
+            },
+          },
+        };
+      });
+    },
+    [persist],
+  );
+
+  const setPlaylistSortOrder = useCallback(
+    (playlistId: string, sortOrder: SortOrder) => {
+      persist((prev) => {
+        const current = prev.playlistProgress[playlistId];
+        if (!current) return prev;
+
+        return {
+          ...prev,
+          playlistProgress: {
+            ...prev.playlistProgress,
+            [playlistId]: {
+              ...current,
+              sortOrder,
+            },
+          },
+        };
+      });
+    },
+    [persist],
+  );
+
+  const getPlaylistVideoCache = useCallback(
+    (playlistId: string) => state.playlistVideoCache[playlistId],
+    [state.playlistVideoCache],
+  );
+
+  const setPlaylistVideoCache = useCallback(
+    (playlistId: string, cache: PlaylistVideoCache) => {
+      persist((prev) => ({
+        ...prev,
+        playlistVideoCache: {
+          ...prev.playlistVideoCache,
+          [playlistId]: cache,
+        },
+      }));
+    },
+    [persist],
+  );
+
+  const recordPlaylistVisit = useCallback(
+    (playlist: PlaylistInfo, sourceUrl?: string) => {
+      persist((prev) => {
+        const entry: VisitedPlaylist = {
+          playlistId: playlist.playlistId,
+          playlistTitle: playlist.title,
+          lastVisitedAt: Date.now(),
+          sourceUrl,
+        };
+        const visitedPlaylists = [
+          entry,
+          ...(prev.visitedPlaylists ?? []).filter(
+            (visited) => visited.playlistId !== playlist.playlistId,
+          ),
+        ];
+
+        return { ...prev, visitedPlaylists };
+      });
+    },
+    [persist],
+  );
+
   return {
     state,
     getProgress,
@@ -293,5 +494,14 @@ export function useAppState() {
     getVideoCache,
     setVideoCache,
     recordVisit,
+    getPlaylistProgress,
+    initPlaylistProgress,
+    markPlaylistWatched,
+    unmarkPlaylistWatched,
+    setPlaylistLatestWatched,
+    setPlaylistSortOrder,
+    getPlaylistVideoCache,
+    setPlaylistVideoCache,
+    recordPlaylistVisit,
   };
 }
